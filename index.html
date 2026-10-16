@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PICC-Related Thrombosis Risk Calculator (Cancer Patients)</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+         margin: 0; background: #f4f6f9; color: #1a1a1a; }
+  .wrap { max-width: 720px; margin: 40px auto; padding: 0 16px; }
+  h1 { font-size: 22px; color: #1f3a5f; margin-bottom: 4px; }
+  .sub { color: #667; margin-bottom: 24px; font-size: 14px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.06);
+          padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 15px; color: #1f3a5f; border-bottom: 1px solid #e7ecf3;
+             padding-bottom: 10px; margin-top: 0; }
+  .row { display: flex; align-items: center; justify-content: space-between;
+         padding: 8px 0; border-bottom: 1px solid #f0f2f6; }
+  .row:last-child { border-bottom: none; }
+  label { font-size: 14px; }
+  .unit { color: #889; font-size: 12px; margin-left: 4px; }
+  select, input[type=number] { font-size: 14px; padding: 6px 8px; border: 1px solid #ccd4e0;
+         border-radius: 6px; width: 160px; background: #fff; }
+  .result { font-size: 15px; }
+  .result .big { font-size: 28px; font-weight: 700; color: #c0392b; }
+  .result table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .result th, .result td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #e7ecf3; }
+  .result th { color: #667; font-weight: 500; font-size: 13px; }
+  .result td.risk { font-weight: 700; font-size: 18px; color: #c0392b; }
+  .note { font-size: 12px; color: #889; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>PICC-Related Thrombosis Risk Calculator</h1>
+  <div class="sub">Prediction of peripherally inserted central catheter (PICC) related thrombosis in cancer patients</div>
+
+  <div class="card">
+    <h2>Patient characteristics</h2>
+    <div class="row"><label>Prior PICC placement</label>
+      <select id="prior_picc"><option value="0">No</option><option value="1">Yes</option></select></div>
+    <div class="row"><label>History of chemotherapy</label>
+      <select id="chemo_hist"><option value="0">No</option><option value="1">Yes</option></select></div>
+    <div class="row"><label>Hematologic malignancy</label>
+      <select id="blood"><option value="0">No</option><option value="1">Yes</option></select></div>
+    <div class="row"><label>Age<span class="unit">(years)</span></label>
+      <input type="number" id="age" value="56" min="10" max="100"></div>
+    <div class="row"><label>White blood cell count<span class="unit">(×10⁹/L)</span></label>
+      <input type="number" id="wbc" value="6.0" min="0" max="200" step="0.1"></div>
+    <div class="row"><label>Platelet count<span class="unit">(×10⁹/L)</span></label>
+      <input type="number" id="plt" value="234" min="0" max="2000"></div>
+    <div class="row"><label>Height<span class="unit">(cm)</span></label>
+      <input type="number" id="height" value="164" min="100" max="220"></div>
+  </div>
+
+  <div class="card result">
+    <h2>Predicted risk of PICC-related thrombosis</h2>
+    <table>
+      <tr><th>Time point</th><th>Risk</th></tr>
+      <tr><td>90 days</td><td class="risk" id="r90">—</td></tr>
+      <tr><td>180 days</td><td class="risk" id="r180">—</td></tr>
+      <tr><td>360 days</td><td class="risk" id="r360">—</td></tr>
+    </table>
+    <p class="note">Risk estimates are derived from a Cox proportional hazards model developed in a cohort of cancer patients undergoing PICC placement. Results are provided for clinical reference and should not replace clinical judgement.</p>
+  </div>
+</div>
+
+<script>
+  const B = {
+    prior_picc: 0.667775721,
+    chemo_hist: 0.696290881,
+    blood: 0.917805955,
+    age: 0.054722847,
+    wbc: 0.064430375,
+    plt: 0.003809147,
+    height: 0.013938581
+  };
+  const H0 = { 90: 0.0000473902, 180: 0.0001030739, 360: 0.0001912070 };
+
+  function calc() {
+    const lp =
+      B.prior_picc * +document.getElementById("prior_picc").value +
+      B.chemo_hist * +document.getElementById("chemo_hist").value +
+      B.blood      * +document.getElementById("blood").value +
+      B.age        * +document.getElementById("age").value +
+      B.wbc        * +document.getElementById("wbc").value +
+      B.plt        * +document.getElementById("plt").value +
+      B.height     * +document.getElementById("height").value;
+    const elp = Math.exp(lp);
+    document.getElementById("r90").textContent  = ((1 - Math.exp(-H0[90]  * elp)) * 100).toFixed(1) + "%";
+    document.getElementById("r180").textContent = ((1 - Math.exp(-H0[180] * elp)) * 100).toFixed(1) + "%";
+    document.getElementById("r360").textContent = ((1 - Math.exp(-H0[360] * elp)) * 100).toFixed(1) + "%";
+  }
+  document.querySelectorAll("select, input").forEach(el => el.addEventListener("input", calc));
+  calc();
+</script>
+</body>
+</html>
