@@ -50,8 +50,6 @@
       <input type="number" id="wbc" value="6.0" min="0" max="200" step="0.1"></div>
     <div class="row"><label>Platelet count<span class="unit">(×10⁹/L)</span></label>
       <input type="number" id="plt" value="234" min="0" max="2000"></div>
-    <div class="row"><label>Height<span class="unit">(cm)</span></label>
-      <input type="number" id="height" value="164" min="100" max="220"></div>
   </div>
 
   <div class="card result">
@@ -68,15 +66,14 @@
 
 <script>
   const B = {
-    prior_picc: 0.667775721,
-    chemo_hist: 0.696290881,
-    blood: 0.917805955,
-    age: 0.054722847,
-    wbc: 0.064430375,
-    plt: 0.003809147,
-    height: 0.013938581
+    prior_picc: 0.65362756,
+    chemo_hist: 0.70419914,
+    blood: 0.93111647,
+    age: 0.05432356,
+    wbc: 0.06715842,
+    plt: 0.00371623
   };
-  const H0 = { 90: 0.0000473902, 180: 0.0001030739, 360: 0.0001912070 };
+  const H0 = { 90: 0.0004794244, 180: 0.0010420519, 360: 0.0019297196 };
 
   function calc() {
     const lp =
@@ -85,8 +82,7 @@
       B.blood      * +document.getElementById("blood").value +
       B.age        * +document.getElementById("age").value +
       B.wbc        * +document.getElementById("wbc").value +
-      B.plt        * +document.getElementById("plt").value +
-      B.height     * +document.getElementById("height").value;
+      B.plt        * +document.getElementById("plt").value;
     const elp = Math.exp(lp);
     document.getElementById("r90").textContent  = ((1 - Math.exp(-H0[90]  * elp)) * 100).toFixed(1) + "%";
     document.getElementById("r180").textContent = ((1 - Math.exp(-H0[180] * elp)) * 100).toFixed(1) + "%";
