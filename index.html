@@ -22,8 +22,6 @@
   .unit { color: #889; font-size: 12px; margin-left: 4px; }
   select, input[type=number] { font-size: 14px; padding: 6px 8px; border: 1px solid #ccd4e0;
          border-radius: 6px; width: 160px; background: #fff; }
-  .result { font-size: 15px; }
-  .result .big { font-size: 28px; font-weight: 700; color: #c0392b; }
   .result table { width: 100%; border-collapse: collapse; margin-top: 8px; }
   .result th, .result td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #e7ecf3; }
   .result th { color: #667; font-weight: 500; font-size: 13px; }
@@ -45,48 +43,51 @@
     <div class="row"><label>Hematologic malignancy</label>
       <select id="blood"><option value="0">No</option><option value="1">Yes</option></select></div>
     <div class="row"><label>Age<span class="unit">(years)</span></label>
-      <input type="number" id="age" value="56" min="10" max="100"></div>
+      <input type="number" id="age" value="56" min="18" max="100"></div>
     <div class="row"><label>White blood cell count<span class="unit">(×10⁹/L)</span></label>
-      <input type="number" id="wbc" value="6.0" min="0" max="200" step="0.1"></div>
+      <input type="number" id="wbc" value="6.1" min="0" max="200" step="0.1"></div>
     <div class="row"><label>Platelet count<span class="unit">(×10⁹/L)</span></label>
-      <input type="number" id="plt" value="234" min="0" max="2000"></div>
+      <input type="number" id="plt" value="237" min="0" max="2000"></div>
   </div>
 
   <div class="card result">
-    <h2>Predicted risk of PICC-related thrombosis</h2>
+    <h2>Predicted cumulative incidence of PICC-related thrombosis</h2>
     <table>
       <tr><th>Time point</th><th>Risk</th></tr>
       <tr><td>90 days</td><td class="risk" id="r90">—</td></tr>
       <tr><td>180 days</td><td class="risk" id="r180">—</td></tr>
       <tr><td>360 days</td><td class="risk" id="r360">—</td></tr>
     </table>
-    <p class="note">Risk estimates are derived from a Cox proportional hazards model developed in a cohort of cancer patients undergoing PICC placement. Results are provided for clinical reference and should not replace clinical judgement.</p>
+    <p class="note">Risk estimates are derived from a Fine-Gray competing-risk regression model (catheter removal treated as a competing event) developed in a cohort of cancer patients undergoing PICC placement. Results are provided for clinical reference and should not replace clinical judgement.</p>
   </div>
 </div>
 
 <script>
+  // Fine-Gray coefficients (centered at medians: age 56, WBC 6.11, platelets 237)
   const B = {
-    prior_picc: 0.65362756,
-    chemo_hist: 0.70419914,
-    blood: 0.93111647,
-    age: 0.05432356,
-    wbc: 0.06715842,
-    plt: 0.00371623
+    prior_picc: 0.825333835,
+    chemo_hist: 0.933170007,
+    blood: 0.979500742,
+    age: 0.051782530,
+    wbc: 0.104150035,
+    plt: 0.003357416
   };
-  const H0 = { 90: 0.0004794244, 180: 0.0010420519, 360: 0.0019297196 };
+  // Baseline cumulative incidence (typical patient) for CIF = 1 - (1-CIF0)^exp(lp)
+  const CIF0 = { 90: 0.02875907, 180: 0.05653961, 360: 0.08603341 };
 
   function calc() {
     const lp =
       B.prior_picc * +document.getElementById("prior_picc").value +
       B.chemo_hist * +document.getElementById("chemo_hist").value +
       B.blood      * +document.getElementById("blood").value +
-      B.age        * +document.getElementById("age").value +
-      B.wbc        * +document.getElementById("wbc").value +
-      B.plt        * +document.getElementById("plt").value;
+      B.age        * (+document.getElementById("age").value - 56) +
+      B.wbc        * (+document.getElementById("wbc").value - 6.11) +
+      B.plt        * (+document.getElementById("plt").value - 237);
     const elp = Math.exp(lp);
-    document.getElementById("r90").textContent  = ((1 - Math.exp(-H0[90]  * elp)) * 100).toFixed(1) + "%";
-    document.getElementById("r180").textContent = ((1 - Math.exp(-H0[180] * elp)) * 100).toFixed(1) + "%";
-    document.getElementById("r360").textContent = ((1 - Math.exp(-H0[360] * elp)) * 100).toFixed(1) + "%";
+    const cif = u => (1 - Math.pow(1 - CIF0[u], elp)) * 100;
+    document.getElementById("r90").textContent  = cif(90).toFixed(1) + "%";
+    document.getElementById("r180").textContent = cif(180).toFixed(1) + "%";
+    document.getElementById("r360").textContent = cif(360).toFixed(1) + "%";
   }
   document.querySelectorAll("select, input").forEach(el => el.addEventListener("input", calc));
   calc();
